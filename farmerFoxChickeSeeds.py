@@ -1,6 +1,7 @@
 from collections import deque
 import matplotlib.pyplot as plt
 import networkx as nx
+import heapq
 
 # Create a more readable graph
 def create_graph(solution):
@@ -52,6 +53,7 @@ class State:
         self.fox = fox
         self.chicken = chicken
         self.seeds = seeds
+        self.cost = farmer + fox + chicken + seeds
 
     def __str__(self):
         return f"({self.farmer}, {self.fox}, {self.chicken}, {self.seeds})"
@@ -63,6 +65,9 @@ class State:
             and self.chicken == other.chicken
             and self.seeds == other.seeds
         )
+    def __lt__(self, other):
+        # Compare states based on their cost
+        return self.cost < other.cost
 
     def __hash__(self):
         return hash((self.farmer, self.fox, self.chicken, self.seeds))
@@ -171,6 +176,33 @@ def a_star(initial_state, goal_state):
 
     return None
 
+def dijkstra(initial_state, goal_state):
+    open_set = [(0, initial_state)]
+    came_from = {}
+    cost_so_far = {initial_state: 0}
+
+    while open_set:
+        current_cost, current_state = heapq.heappop(open_set)
+
+        if current_state == goal_state:
+            path = [current_state]
+            while current_state in came_from:
+                current_state = came_from[current_state]
+                path.append(current_state)
+            return path[::-1]
+
+        for next_state in get_next_states(current_state):
+            new_cost = cost_so_far[current_state] + 1
+            if (
+                next_state not in cost_so_far
+                or new_cost < cost_so_far[next_state]
+            ):
+                cost_so_far[next_state] = new_cost
+                priority = new_cost
+                heapq.heappush(open_set, (priority, next_state))
+                came_from[next_state] = current_state
+
+    return None
 # Define initial and goal states
 initial_state = State(0, 0, 0, 0)
 goal_state = State(1, 1, 1, 1)
@@ -184,8 +216,10 @@ dfs_solution = dfs(initial_state, goal_state)
 # Solve using A*
 a_star_solution = a_star(initial_state, goal_state)
 
+dijkstra_solution = dijkstra(initial_state, goal_state)
+
 # Print solutions
-print("BFS Solution:", bfs_solution)
+print("BFS Solution:")
 if bfs_solution:
     for state in bfs_solution:
         print(state)
@@ -206,5 +240,14 @@ if a_star_solution:
     for state in a_star_solution:
         print(state)
     plot_solution(a_star_solution, "A*")
+else:
+    print("No solution found.")
+
+# Print solutions
+print("Dijkstra's Solution:")
+if dijkstra_solution:
+    for state in dijkstra_solution:
+        print(state)
+    plot_solution(dijkstra_solution, "Dijkstra's")
 else:
     print("No solution found.")
